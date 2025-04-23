@@ -1,0 +1,885 @@
+
+/* Base Styles */
+body {
+  background-color: #0d0d0d;
+  color: #fff;
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Dashboard Layout */
+.dashboard {
+  padding: 30px;
+  background-color: black !important;
+}
+
+/* Header Styles */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px 20px;
+}
+
+.left-brand {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.right-placeholder {
+  flex: 1;
+}
+
+.logo-img {
+  height: 40px;
+  width: auto;
+}
+
+.dashboard-title {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0;
+  color: white;
+}
+.main-section {
+  display: flex;
+  gap: 30px;
+  min-height: 360px;
+  margin-bottom: 40px;
+}
+
+/* Circular Layout Left Section */
+.left-section {
+  position: relative;
+  height: 600px;
+  width: 70%; 
+  border: 1px solid #10141a;
+  border-radius: 10px;
+  padding: 15px;
+  background-color: rgba(26, 26, 26, 0.3);
+  margin-top: 10px; /* Add top margin */
+}
+
+.circular-layout {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.machine-card {
+  position: absolute;
+  width: 180px;
+ 
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+.machine-card-manual{
+  height:200px !important;
+  position: absolute;
+  width: 180px;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.machine-card:hover {
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+/* Center - Astor */
+.left-center-card {
+  top: 30%;
+  /* left: 0; */
+  right: 77%;
+  transform: translateY(10%);
+  width: 200px;
+  z-index: 3;
+}
+
+/* Top Cards */
+.top-left-card {
+  top: 10%;
+  left: 24%;
+  width: 205px;
+  /* gap: 30px; */
+}
+
+.top-right-card {
+  top: 10%;
+  right: 22%;
+  width: 205px;
+}
+
+/* Right Center - Manual QC */
+.right-center-card {
+  top: 30%;
+  right: 0%;
+  border-radius: 5px !important;
+  transform: translateY(10%);
+  height: 200px !important;
+}
+
+
+/* Bottom Cards */
+.bottom-left-card {
+  bottom: 7%;
+  left: 24%;
+  width: 205px;
+}
+
+.bottom-right-card {
+  bottom: 7%;
+  right: 22%;
+  width: 205px;
+}
+/* Add these CSS styles to your component's CSS file */
+
+.amr-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.amr-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 10;
+}
+
+.amr-animated {
+  position: absolute;
+  /* Position is set dynamically with ngStyle */
+  text-align: center;
+  z-index: 100;
+  transition: top 0.2s ease, left 0.2s ease; /* Smooths the animation */
+}
+
+.amr-image {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.amr-status {
+  font-size: 12px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px;
+  border-radius: 4px;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moving-indicator {
+  display: inline-block;
+  animation: blink 1s infinite;
+  color: #ff9800;
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+@keyframes float {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50% { transform: translate(-50%, -55%); }
+}
+
+/* Card Styling */
+.grid-card-inner {
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  height: 120px;
+  padding: 15px;
+  position: relative;
+}
+
+.ASRS-card {
+  height: 200px !important;
+}
+.asrs-image{
+  height: 30px;
+  background-color:#4096ff;
+}
+.filled {
+  background-color: yellow;
+}
+
+.empty {
+  background-color: red;
+}
+
+.processing {
+  background-color: transparent; /* or whatever you want for colorless */
+  border: 1px solid #ccc; /* optional border for visibility */
+}
+
+.good {
+  background-color: green;
+}
+
+.rejected {
+  background-color: red;
+}
+/* Make "Done" status display in red for each process */
+.status-indicator.done-bg {
+  background-color: #ff4b5c !important;
+  color: white;
+}
+
+/* Make AMR text display in white */
+.amr-center div {
+  color: white;
+}
+.card-top-overlap-image {
+  width: 48px;
+  height: 48px;
+  position: absolute;
+  top: -20px;
+  left: 15px;
+  z-index: 1;
+  border-radius: 8px;
+  background-color: rgb(150, 146, 146);
+  border: 2px solid #333;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .machine-card {
+    width: 160px;
+  }
+  
+  .top-left-card, .top-right-card {
+    top: 10%;
+  }
+  
+  .bottom-left-card, .bottom-right-card {
+    bottom: 10%;
+  }
+  
+  .right-center-card {
+    right: 5%;
+  }
+}
+
+@media (max-width: 992px) {
+  .main-section {
+    flex-direction: column;
+  }
+  
+  .left-section {
+    width: 100%;
+    height: 500px;
+    margin-bottom: 30px;
+  }
+  
+  .machine-card {
+    width: 140px;
+  }
+}
+.machine-content-wrapper {
+  height: 100%;
+  padding: 10px 15px 15px; /* reduced top padding from 20px to 10px */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.machine-header {
+  display: flex;
+  justify-content: right; 
+  align-items: flex-end;       
+  width: 100%;
+  margin-top: -12px;       
+}
+
+.machine-name {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.machine-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.machine-id {
+  font-size: 14px;
+  color: #888;
+}
+
+/* Astor Card Specific */
+.astor-card .machine-content-wrapper {
+  padding-top: 10px;
+}
+
+.astor-card .machine-header {
+  margin-top: -30px;
+  margin-bottom: 10px;
+}
+/* ASRS Slot Grid Styles */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 columns */
+  grid-template-rows: repeat(5, 1fr); /* 5 rows */
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.slot-box {
+  height: 20px;
+  width:20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  position: relative;
+  padding: 4px;
+  /* Default style */
+  background-color: #ccc;
+  color: #333;
+}
+
+/* Status colors */
+.slot-box.filled {
+  background-color: #ffc107; /* Yellow for filled */
+  color: #000;
+}
+
+.slot-box.empty {
+  background-color: #e0e0e0; /* Light gray for empty */
+  color: #666;
+}
+
+.slot-box.processing {
+  background-color: #2196f3; /* Blue for processing */
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+.slot-box.returned-good {
+  background-color: #4caf50; /* Green for good returns */
+  color: white;
+}
+
+.slot-box.rejected {
+  background-color: #f44336; /* Red for rejected */
+  color: white;
+}
+
+.slot-serial {
+  font-size: 9px;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Pulsing animation for processing status */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* AMR animation styles */
+.amr-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.amr-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  font-size: 12px;
+}
+
+.amr-animated {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  font-size: 12px;
+  transition: transform 0.3s ease; /* Smooth rotation transitions */
+}
+
+.amr-image {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+}
+
+.amr-status {
+  font-size: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.moving-indicator {
+  color: #4caf50;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+/* Status indicators for machine cards */
+.status-indicator {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.running-bg {
+  background-color: #4caf50;
+  color: white;
+}
+
+.idle-bg {
+  background-color: #ff9800;
+  color: white;
+}
+
+.stop-bg {
+  background-color: #f44336;
+  color: white;
+}
+
+.done-bg {
+  background-color: #2196f3;
+  color: white;
+}
+
+.running-bg {
+  background-color: rgba(0, 200, 151, 0.2);
+  color: #00c897;
+}
+
+.running-bg::before {
+  content: "● ";
+  margin-right: 4px;
+}
+
+.stop-bg {
+  background-color: rgba(255, 75, 92, 0.2);
+  color: #ff4b5c;
+}
+
+.stop-bg::before {
+  content: "● ";
+  margin-right: 4px;
+}
+
+/* Right Section */
+.right-section {
+  position: relative;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 15px;
+  border: 1px solid #10141a;
+  border-radius: 10px;
+  padding: 25px 15px 15px; /* Increase top padding from 15px to 25px */
+  background-color: rgba(26, 26, 26, 0.3);
+  width: 30%;
+  margin-top: 10px; /* Add top margin */
+}
+@media (max-width: 992px) {
+  .main-section {
+    flex-direction: column;
+  }
+
+  .left-section,
+  .right-section {
+    width: 100%; /* Both sections take full width on smaller screens */
+  }
+
+  .left-section {
+    height: 500px;
+    margin-bottom: 30px;
+  }
+}
+
+.right-section .stat-card {
+  position: relative;
+  overflow: hidden;
+  padding: 15px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  height: 110px;
+  width: 100%;
+  border-radius: 8px;
+  background-color: #1a1a1a;
+}
+
+.right-section .stat-card .icon-container {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60px;
+  height: 60px;
+  background-color:#0a708d;
+  border-radius: 0 8px 0 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 24px;
+  z-index: 1;
+}
+
+.right-section .stat-card .stat-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding-right: 40px;
+  z-index: 0;
+}
+
+.right-section .stat-card .stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 5px;
+}
+
+.right-section .stat-card .stat-label {
+  font-size: 13px;
+  color: #0a708d;
+  line-height: 1;
+  font-weight: bold;
+}
+.right-section .stat-card .stat-label-good{
+  color: green;
+  font-weight: bold;
+
+}
+.right-section .stat-card .stat-label-rejection{
+  color: red;
+  font-weight: bold;
+}
+/* OEE Progress Bar Styles */
+.oee-progress-container {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.oee-progress-bar {
+  height: 10px;
+  background-color: #272727;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.oee-progress-fill {
+  height: 100%;
+  background-color: #0a708d;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.oee-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  width: 100px;
+ 
+  font-size: 10px;
+  color: #666;
+}
+
+/* Alternative Mini Chart Styles */
+.oee-mini-chart {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.oee-mini-chart text {
+  font-weight: bold;
+}
+
+.right-section .chart-card {
+  grid-column: 1 / span 2; /* Make it span both columns */
+  grid-row: 3 / auto; /* Place it in the third row and take up necessary height */
+  height: auto; /* Allow height to adjust to content */
+}
+
+.right-section .chart-card .chart-label {
+  margin-bottom: 10px; /* Reduced margin below label */
+  font-size: 18px; /* Slightly larger label */
+  text-align: center;
+}
+
+.right-section .chart-card .chart-label strong {
+  display: block;
+  font-size: 24px; /* Slightly larger production number */
+}
+
+.right-section .chart-card .chart-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Center content vertically */
+  align-items: center;
+  padding: 10px; /* Add some padding inside the chart container */
+}
+
+.right-section .chart-card .donut-chart {
+  width: 150px; /* Increased donut chart size */
+  height: 150px; /* Increased donut chart size */
+  margin: 10px auto; /* Add some margin around the chart */
+  position: relative;
+}
+
+.right-section .chart-card .chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 15px; /* Reduced gap between legend items */
+  margin-top: 10px; /* Reduced margin above legend */
+}
+
+.right-section .chart-card .chart-legend .legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 14px; /* Slightly larger legend text */
+}
+.right-section .chart-card .chart-legend .legend-item .color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.right-section .chart-card .chart-legend .legend-item .running-dot {
+  background-color: #00c897;
+}
+
+.right-section .chart-card .chart-legend .legend-item .idle-dot {
+  background-color: #ffc107;
+}
+
+.right-section .chart-card .chart-legend .legend-item .stop-dot {
+  background-color: #ff4b5c;
+}
+
+/* Table Section */
+.recent-activities {
+  background-color: rgb(19, 19, 19);
+  border-radius: 8px;
+  padding: 20px;
+  width: 100%;
+  margin-top: 30px;
+  border: 1px solid #19212c;  /* Added outline for consistency */
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+ 
+}
+
+.table-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.table-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-btn {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+  border: none !important;
+  font-size: 13px;
+}
+
+.action-btn:hover {
+  background-color: #030303 !important;
+}
+
+/* Status Badges */
+.status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  margin: 4px 0;
+  min-width: 70px;
+  box-sizing: border-box;
+}
+
+.status.good {
+  background-color: rgba(0, 200, 151, 0.1);
+  color: #00c897;
+  border: 1px solid #00c897;
+  border-radius: 25px;
+}
+
+.status.rejected {
+  background-color: rgba(255, 75, 92, 0.1);
+  color: #ff4b5c;
+  border: 1px solid #ff4b5c;
+  border-radius: 25px;
+}
+
+.station-cell i[nz-icon] {
+  color: #4096ff;
+  margin-right: 5px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .machine-card {
+    width: 160px;
+  }
+  
+  .top-arc-card.arc-position-2,
+  .top-arc-card.arc-position-3,
+  .bottom-arc-card.arc-position-4,
+  .bottom-arc-card.arc-position-6 {
+    left: 15%;
+    right: 15%;
+  }
+  
+  .left-section {
+    height: 600px;
+  }
+}
+
+@media (max-width: 992px) {
+  .main-section {
+    flex-direction: column;
+  }
+  
+  .left-section, .right-section {
+    width: 100%;
+  }
+  
+  .left-section {
+    height: 500px;
+    margin-bottom: 30px;
+  }
+  
+  .machine-card {
+    width: 140px;
+  }
+}
+
+/* ng-zorro overrides */
+:host ::ng-deep .ant-card {
+  background-color: #1a1a1a;
+  border: none;
+  color: white;
+}
+
+:host ::ng-deep .ant-card-body {
+  padding: 0;
+  height: 100%;
+}
+
+:host ::ng-deep .ant-table {
+  background-color: transparent;
+}
+
+:host ::ng-deep .ant-table-wrapper {
+  background-color: transparent;
+}
+
+:host ::ng-deep .ant-table-thead > tr > th {
+  color: #94a3b8;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 10px 16px;
+  background-color: rgb(39, 38, 38) !important;
+  border-bottom: 1px solid #334155;
+}
+
+:host ::ng-deep .ant-table-tbody > tr > td {
+  padding: 4px 6px;
+  color: #f8fafc;
+  font-size: 14px;
+  background-color: transparent !important;
+  border-bottom: 1px solid #334155;
+}
+
+:host ::ng-deep .ant-table-tbody > tr:hover > td {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Section titles for left and right sections */
+.left-section::before {
+  content: "Factory Layout";
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  background-color: #1a1a1a;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 17px;
+  font-weight: 500;
+  color: #f3d738;
+}
+.right-section::before {
+  content: "Monthly Performance- Apr 25";
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  background-color: #1a1a1a;
+  padding: 0 10px;
+  font-size: 15px;
+  border-radius: 7px;
+  font-weight: 500;
+  color: #f3d738;
+  z-index: 1;
+}
