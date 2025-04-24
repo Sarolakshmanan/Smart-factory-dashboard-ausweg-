@@ -1,1 +1,349 @@
-<p>white-theme works!</p>
+
+<div class="dashboard">
+    <div class="dashboard-header">
+      <div class="left-brand">
+        <img src="assets/logo.png" alt="Logo" class="logo-img" />
+        <h2 class="dashboard-title">Smart Factory</h2>
+      </div>
+      <div class="right-placeholder"></div>
+    </div>
+  
+    <div class="main-section">
+      <div class="left-section">
+        <div class="circular-layout">
+          <div class="machine-card left-center-card">
+            <nz-card class="grid-card-inner ASRS-card">
+              <div class="machine-content-wrapper">
+                <div class="machine-header">
+                  <div class="machine-name">ASRS</div>
+                  <div class="machine-icon">
+                    <img src="assets/asrs.jfif" class="card-top-overlap-image" alt="ASRS">
+                  </div>
+                </div>
+               <!-- Replace your current ASRS slot grid with this code -->
+               <div class="slot-grid">
+                <div *ngFor="let slot of slots" class="slot-box"
+                  [ngClass]="{
+                    'processing': slot.status === 'Processing',
+                    'empty': slot.status === 'Empty',
+                    'returned-good': slot.status === 'Returned-Good' || (slot.status === 'Filled' && slot.final_status === 'Good'),
+                    'rejected': slot.status === 'Filled' && slot.final_status === 'Rejected',
+                    'filled': slot.status === 'Filled' && !slot.final_status
+                  }">
+                  {{ slot.slot_number }}
+                  <div *ngIf="slot.serial_no" class="slot-serial">
+                    {{ slot.serial_no }}
+                  </div>
+                </div>
+              </div>
+  
+              </div>
+            </nz-card>
+          </div>
+  
+          <div class="machine-card top-left-card">
+            <nz-card class="machine-card-inner">
+              <img src="assets/CNC.png" class="card-top-overlap-image" alt="CNC">
+              <div class="machine-content-wrapper">
+                <div class="machine-header">
+                  <div class="machine-name">{{ cncTurning.station }}</div>
+                </div>
+                <div class="machine-details">
+                  <div class="machine-id">P10603</div>
+                  <div class="status-indicator" [ngClass]="cncTurning.status ? cncTurning.status.toLowerCase() + '-bg' : ''">{{ cncTurning.status }}</div>
+                  <div *ngIf="currentProducts['CNC Turning']">
+                    Processing: {{ currentProducts['CNC Turning']?.serial_no }} ({{ currentProducts['CNC Turning']?.status }})
+                  </div>
+                </div>
+              </div>
+            </nz-card>
+          </div>
+  
+          <div class="machine-card top-right-card">
+            <nz-card class="machine-card-inner">
+              <img src="assets/milling-machine.png" class="card-top-overlap-image" alt="Milling">
+              <div class="machine-content-wrapper">
+                <div class="machine-header">
+                  <div class="machine-name">{{ milling.station }}</div>
+                </div>
+                <div class="machine-details">
+                  <div class="machine-id">P09245</div>
+                  <div class="status-indicator" [ngClass]="milling.status ? milling.status.toLowerCase() + '-bg' : ''">{{ milling.status }}</div>
+                  <div *ngIf="currentProducts['Milling']">
+                    Processing: {{ currentProducts['Milling']?.serial_no }} ({{ currentProducts['Milling']?.status }})
+                  </div>
+                </div>
+              </div>
+            </nz-card>
+          </div>
+  
+          <div class="machine-card-manual right-center-card">
+            <nz-card class="machine-card-inner ASRS-card" style="border-radius: 10px;">
+              <img src="assets/manual-QC.png" class="card-top-overlap-image" alt="Manual QC">
+              <div class="machine-content-wrapper">
+                <div class="machine-header">
+                  <div class="machine-name">{{ manualQC.station }}</div>
+                </div>
+                <div class="machine-details">
+                  <div class="machine-id">P10803</div>
+                  <div class="status-indicator" [ngClass]="manualQC.status ? manualQC.status.toLowerCase() + '-bg' : ''">{{ manualQC.status }}</div>
+                  <div *ngIf="currentProducts['Manual QC']">
+                    Processing: {{ currentProducts['Manual QC']?.serial_no }} ({{ currentProducts['Manual QC']?.status }})
+                  </div>
+                </div>
+              </div>
+            </nz-card>
+          </div>
+  
+          <div class="machine-card bottom-right-card">
+            <nz-card class="machine-card-inner">
+              <img src="assets/manufacturing.png" class="card-top-overlap-image" alt="Assembly">
+              <div class="machine-content-wrapper">
+                <div class="machine-header">
+                  <div class="machine-name">{{ assembly.station }}</div>
+                </div>
+                <div class="machine-details">
+                  <div class="machine-id">Robot Leon</div>
+                  <div class="status-indicator" [ngClass]="assembly.status ? assembly.status.toLowerCase() + '-bg' : ''">{{ assembly.status }}</div>
+                  <div *ngIf="currentProducts['Assembly']">
+                    Processing: {{ currentProducts['Assembly']?.serial_no }} ({{ currentProducts['Assembly']?.status }})
+                  </div>
+                </div>
+              </div>
+            </nz-card>
+          </div>
+  
+          <div class="machine-card bottom-left-card">
+            <nz-card class="machine-card-inner">
+              <img src="assets/visual-ins.png" class="card-top-overlap-image" alt="Visual Inspection">
+              <div class="machine-content-wrapper">
+                <div class="machine-header">
+                  <div class="machine-name">{{ visualInspection.station }}</div>
+                </div>
+                <div class="machine-details">
+                  <div class="machine-id">P09125</div>
+                  <div class="status-indicator" [ngClass]="visualInspection.status ? visualInspection.status.toLowerCase() + '-bg' : ''">{{ visualInspection.status }}</div>
+                  <div *ngIf="currentProducts['Visual Inspection']">
+                    Processing: {{ currentProducts['Visual Inspection']?.serial_no }} ({{ currentProducts['Visual Inspection']?.status }})
+                  </div>
+                </div>
+              </div>
+            </nz-card>
+          </div>
+  
+         <!-- Replace your current AMR center div with this -->
+  <div class="amr-container">
+    <!-- Static AMR in center when not moving -->
+    <div *ngIf="!isAnimating" class="amr-center">
+      <img src="assets/amr-2.png" alt="AMR" class="amr-image"/>
+      <div *ngIf="amr">
+        {{ amr.action_type }} {{ amr.serial_no }} from {{ amr.from_location }} to {{ amr.to_location }} ({{ amr.status }})
+      </div>
+    </div>
+    
+    <!-- Animated AMR when moving -->
+    <div *ngIf="isAnimating" class="amr-animated" 
+         [ngStyle]="{
+           'left': amrPosition.x + '%',
+           'top': amrPosition.y + '%',
+           'transform': 'translate(-50%, -50%) rotate(' + amrRotation + 'deg)'
+         }">
+      <img src="assets/amr-2.png" alt="AMR" class="amr-image"/>
+      <div class="amr-status">
+        {{ amr?.action_type }} {{ amr?.serial_no }} 
+        <span class="moving-indicator">Moving...</span>
+      </div>
+    </div>
+  </div>
+        </div>
+      </div>
+  
+      <!-- Right Stats Section -->
+      <div class="right-section">
+        <!-- OEE Card (Static 85%) -->
+        <nz-card class="stat-card">
+          <div class="icon-container">
+            <i nz-icon nzType="dashboard" nzTheme="outline"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">85%</div>
+            <div class="stat-label">OEE</div>
+            <div class="oee-progress-container">
+              <div class="oee-progress-bar">
+                <div class="oee-progress-fill" style="width: 85%;"></div>
+              </div>
+              <div class="oee-progress-labels">
+                <span>0%</span>
+                <span>100%</span>
+              </div>
+            </div>
+          </div>
+        </nz-card>
+      
+        <!-- Total Production Card (from backend) -->
+        <nz-card class="stat-card">
+          <div class="icon-container">
+            <i nz-icon nzType="database" nzTheme="outline"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ productionMetrics.total_units }}</div>
+            <div class="stat-label">Total Production</div>
+          </div>
+        </nz-card>
+      
+        <!-- Good Units Card (from backend) -->
+        <nz-card class="stat-card">
+          <div class="icon-container">
+            <i nz-icon nzType="check-circle" nzTheme="outline"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ productionMetrics.good_units }}</div>
+            <div class="stat-label-good">Good</div>
+          </div>
+        </nz-card>
+      
+        <!-- Rejections Card (from backend) -->
+        <nz-card class="stat-card">
+          <div class="icon-container">
+            <i nz-icon nzType="close-circle" nzTheme="outline"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ productionMetrics.bad_units }}</div>
+            <div class="stat-label-rejection">Rejections</div>
+          </div>
+        </nz-card>
+      
+        <!-- Chart Card (unchanged) -->
+        <nz-card class="chart-card">
+          <div class="chart-label">Production<strong>11,033</strong></div>
+          <div class="chart-container">
+            <div class="donut-chart">
+              <svg width="100%" height="100%" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="#0d0d0d" stroke="#272727" stroke-width="1"/>
+                <path d="M 50,50 L 90,50 A 40,40 0 0,1 70,85 Z" fill="#00c897"/>
+                <path d="M 50,50 L 70,85 A 40,40 0 0,1 30,85 Z" fill="#ffc107"/>
+                <path d="M 50,50 L 30,85 A 40,40 0 0,1 10,50 L 50,50 Z" fill="#ff4b5c"/>
+                <circle cx="50" cy="50" r="25" fill="#0d0d0d"/>
+              </svg>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item">
+                <div class="color-dot running-dot"></div> Running
+              </div>
+              <div class="legend-item">
+                <div class="color-dot idle-dot"></div> Idle
+              </div>
+              <div class="legend-item">
+                <div class="color-dot stop-dot"></div> Stop
+              </div>
+            </div>
+          </div>
+        </nz-card>
+      </div>
+      </div>
+  
+    <!-- Recent Activities Table -->
+    <div class="recent-activities">
+      <div class="table-header">
+        <h2>Recent Activities</h2>
+        <div class="table-actions">
+          <button nz-button nzType="default" class="action-btn">
+            <i nz-icon nzType="filter" nzTheme="outline"></i>Filter
+          </button>
+        </div>
+      </div>
+  
+      <nz-table
+        #activitiesTable
+        [nzData]="[
+          { 
+            serial: '1', 
+            materialId: 'MAT-001', 
+            cncTime: '08:10:45',
+            millingTime: '08:15:30',
+            assemblyTime: '08:20:15',
+            qcTime: '08:25:00',
+            inspectionTime: '08:30:45',
+            status: 'Good'
+          },
+          { 
+            serial: '2', 
+            materialId: 'MAT-002', 
+            cncTime: '08:05:20',
+            millingTime: '08:12:10',
+            assemblyTime: '08:18:45',
+            qcTime: '08:22:30',
+            inspectionTime: '08:28:15',
+            status: 'Rejected'
+          },
+          { 
+            serial: '3', 
+            materialId: 'MAT-003', 
+            cncTime: '08:00:10',
+            millingTime: '08:08:45',
+            assemblyTime: '08:15:20',
+            qcTime: '08:20:05',
+            inspectionTime: '08:25:50',
+            status: 'Good'
+          },
+          { 
+            serial: '4', 
+            materialId: 'MAT-004', 
+            cncTime: '07:55:30',
+            millingTime: '08:05:15',
+            assemblyTime: '08:12:00',
+            qcTime: '08:18:45',
+            inspectionTime: '08:24:30',
+            status: 'Good'
+          },
+          { 
+            serial: '5', 
+            materialId: 'MAT-005', 
+            cncTime: '07:50:20',
+            millingTime: '08:00:05',
+            assemblyTime: '08:08:40',
+            qcTime: '08:15:25',
+            inspectionTime: '08:22:10',
+            status: 'Rejected'
+          }
+        ]"
+        [nzShowPagination]="false">
+        <thead>
+          <tr>
+            <th>S.No</th>
+            <th>Material</th>
+            <!-- <th>Current Station</th> -->
+            <th>CNC</th>
+            <th>Milling</th>
+            <th>Assembly</th>
+            <th>Manual QC</th>
+            <th>Visual Inspection</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let data of activitiesTable.data">
+            <td>{{ data.serial }}</td>
+            <td>{{ data.materialId }}</td>
+            <!-- <td>
+              <div class="station-cell">
+                <i nz-icon [nzType]="data.station.icon" nzTheme="outline"></i>
+                {{ data.station.name }}
+              </div>
+            </td> -->
+            <td>{{ data.cncTime }}</td>
+            <td>{{ data.millingTime }}</td>
+            <td>{{ data.assemblyTime }}</td>
+            <td>{{ data.qcTime }}</td>
+            <td>{{ data.inspectionTime }}</td>
+            <td>
+              <span class="status" [ngClass]="data.status.toLowerCase()">
+                {{ data.status }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </nz-table>
+    </div>
+  </div>
+  
