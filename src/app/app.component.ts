@@ -1,7 +1,22 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, ChangeDetectorRef } from '@angular/core';
 import { WebsocketService } from './websocket.service';
-import { Slot, Station, Product, AMR, StationKey, PathKey, Position, ProductionMetrics } from './models';
+import { Slot, Station, Product, AMR, StationKey, PathKey, Position, ProductHistory } from './models';
 import { Subscription } from 'rxjs';
+import * as Highcharts from 'highcharts';
+
+// Add this to enable animations in Highcharts
+Highcharts.setOptions({
+  chart: {
+    animation: true
+  },
+  plotOptions: {
+    series: {
+      animation: {
+        duration: 1000
+      }
+    }
+  }
+});
 
 @Component({
   selector: 'app-root',
@@ -31,15 +46,12 @@ export class AppComponent implements OnInit, OnDestroy {
   // AMR
   amr: AMR | undefined;
 
-  // Production metrics (directly from backend)
-  productionMetrics: ProductionMetrics = {
-    total_units: 0,
-    good_units: 0,
-    bad_units: 0
-  };
-
-  // Recent activities
-  recentActivities: any[] = [];
+  // Production statistics
+  totalProduction: number = 0;
+  goodProducts: number = 0;
+  rejections: number = 0;
+  oeePercentage: number = 0;
+  amrTrips: number = 0;
 
   // AMR Animation properties
   amrPosition: Position = { x: 50, y: 50 };
@@ -56,7 +68,7 @@ export class AppComponent implements OnInit, OnDestroy {
     'Visual Inspection': { x: 25, y: 75 }
   };
 
-  // Station paths
+  // Paths between stations
   stationPaths: Record<PathKey, Position[]> = {
     'ASRS-CNC Turning': [
       { x: 50, y: 50 },
@@ -110,51 +122,126 @@ export class AppComponent implements OnInit, OnDestroy {
     ]
   };
 
-  private wsSubscription?: Subscription;
-  private metricsSubscription?: Subscription;
+  Highcharts: typeof Highcharts = Highcharts;
+  chartRef: Highcharts.Chart | null = null;
+  
+  pieChartOptions: Highcharts.Options = {
+    chart: {
+      type: 'pie',
+      backgroundColor: 'transparent',
+      height: 200,
+      animation: true
+    },
+    title: {
+      text: 'Station Status',
+      style: {
+        color: '#ffffff'
+      }
+    },
+    plotOptions: {
+      pie: {
+        allowPointSelect: true,
+        cursor: 'pointer',
+        animation: {
+          duration: 800
+        },
+        dataLabels: {
+          enabled: true,
+          format: '<b>{point.name}</b>: {point.y}',
+          style: {
+            color: 'white'
+          }
+        },
+        colors: [
+          '#00c897', // Running - Green
+          '#ffc107', // Idle - Yellow
+          '#ff4b5c'  // Stopped - Red
+        ]
+      }
+    },
+    series: [{
+      type: 'pie',
+      name: 'Status',
+      data: [
+        { name: 'Running', y: 0 },
+        { name: 'Idle', y: 5 },
+        { name: 'Stopped', y: 0 }
+      ]
+    }],
+    credits: {
+      enabled: false
+    },
+    legend: {
+      itemStyle: {
+        color: 'white'
+      }
+    }
+  };
 
-  constructor(private wsService: WebsocketService) {}
+  chartCallback: Highcharts.ChartCallbackFunction = (chart) => {
+    this.chartRef = chart;
+  };
+
+  productHistoryData: ProductHistory[] = [];
+  private wsSubscription?: Subscription;
+
+  constructor(
+    private wsService: WebsocketService, 
+    private changeDetectorRef: ChangeDetectorRef,
+    private zone: NgZone
+  ) {}
 
   ngOnInit(): void {
     this.initializeEmptySlots();
-    
-    // Subscribe to main WebSocket for left section data
     this.wsSubscription = this.wsService.messages$.subscribe(
       (msg) => {
-        if (!msg || !msg.type) return;
+        if (!msg) return;
         
-        switch (msg.type) {
-          case 'slot_update': this.updateSlot(msg); break;
-          case 'station_update': this.updateStation(msg); break;
-          case 'product_update': this.updateProduct(msg); break;
-          case 'amr_update': this.updateAMR(msg); break;
-          case 'stats_update': this.updateStats(msg); break;
-        }
+        this.zone.run(() => {
+          if (msg.type === 'product_history_update') {
+            this.updateProductHistory(msg);
+          } 
+          else if (msg.type === 'station_status_counts') {
+            this.updatePieChart(msg);
+          }
+          else if (msg.type) {
+            switch (msg.type) {
+              case 'slot_update':
+                this.updateSlot(msg);
+                break;
+              case 'station_update':
+                this.updateStation(msg);
+                break;
+              case 'product_update':
+                this.updateProduct(msg);
+                break;
+              case 'amr_update':
+                this.updateAMR(msg);
+                break;
+              case 'metrics_update':
+                this.updateMetrics(msg.metrics);
+                break;
+              case 'stats_update':
+                this.updateStats(msg);
+                break;
+            }
+          }
+          
+          // Force change detection
+          this.changeDetectorRef.detectChanges();
+        });
       },
       (error) => console.error('Dashboard Component Error:', error)
     );
     
-    // Subscribe to metrics WebSocket for right section data
-    this.metricsSubscription = this.wsService.metrics$.subscribe(
-      (metrics: any) => { // Changed to 'any' to handle potential backend differences
-        this.productionMetrics = {
-          total_units: metrics.total_units || 0,
-          good_units: metrics.good_units || 0,
-          bad_units: metrics.bad_units || 0
-        };
-      },
-      (error) => console.error('Metrics subscription error:', error)
-    );
-
     this.requestInitialState();
+    this.requestProductHistory();
+    this.requestStationStats();
   }
 
   ngOnDestroy(): void {
     if (this.wsSubscription) {
       this.wsSubscription.unsubscribe();
-    }
-    if (this.metricsSubscription) {
-      this.metricsSubscription.unsubscribe();
     }
     this.wsService.disconnect();
   }
@@ -179,6 +266,26 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  requestProductHistory(): void {
+    try {
+      this.wsService.sendHistoryMessage({
+        action: 'get_product_history'
+      });
+    } catch (err) {
+      console.error('Failed to request product history:', err);
+    }
+  }
+
+  requestStationStats(): void {
+    try {
+      this.wsService.sendStationStatsMessage({
+        action: 'get_station_stats'
+      });
+    } catch (err) {
+      console.error('Failed to request station stats:', err);
+    }
+  }
+
   updateSlot(msg: any): void {
     const slotIndex = this.slots.findIndex(s => s.slot_number === msg.slot_number);
     if (slotIndex !== -1) {
@@ -189,82 +296,61 @@ export class AppComponent implements OnInit, OnDestroy {
         material_id: msg.material_id,
         final_status: msg.final_status
       };
-      this.slots = [...this.slots];
+      this.slots = [...this.slots]; // Create new array reference to trigger change detection
     }
   }
 
   updateStation(msg: any): void {
+    let validStatus: 'Idle' | 'Running' | 'Stop' | 'Done' | 'Stopped' = 'Idle';
+    
+    if (msg.status === 'Running') {
+      validStatus = 'Running';
+    } else if (msg.status === 'Idle') {
+      validStatus = 'Idle';
+    } else if (msg.status === 'Stopped') {
+      validStatus = 'Stop';
+    } else if (msg.status === 'Done') {
+      validStatus = 'Done';
+    }
+
+    const updatedStation = { ...msg, status: validStatus };
+
     switch (msg.station) {
       case 'CNC Turning':
-        this.cncTurning = { 
-          station: 'CNC Turning',
-          status: msg.status,
-          serial_number: msg.serial_number,
-          material_id: msg.material_id,
-          production_count: msg.production_count
-        };
+        this.cncTurning = updatedStation;
         break;
       case 'Milling':
-        this.milling = { 
-          station: 'Milling',
-          status: msg.status,
-          serial_number: msg.serial_number,
-          material_id: msg.material_id,
-          production_count: msg.production_count
-        };
+        this.milling = updatedStation;
         break;
       case 'Manual QC':
-        this.manualQC = { 
-          station: 'Manual QC',
-          status: msg.status,
-          serial_number: msg.serial_number,
-          material_id: msg.material_id,
-          production_count: msg.production_count
-        };
+        this.manualQC = updatedStation;
         break;
       case 'Assembly':
-        this.assembly = { 
-          station: 'Assembly',
-          status: msg.status,
-          serial_number: msg.serial_number,
-          material_id: msg.material_id,
-          production_count: msg.production_count
-        };
+        this.assembly = updatedStation;
         break;
       case 'Visual Inspection':
-        this.visualInspection = { 
-          station: 'Visual Inspection',
-          status: msg.status,
-          serial_number: msg.serial_number,
-          material_id: msg.material_id,
-          production_count: msg.production_count
-        };
+        this.visualInspection = updatedStation;
         break;
     }
+    
+    // Request updated station stats after a station update
+    this.requestStationStats();
   }
 
   updateProduct(msg: any): void {
     if (!msg.current_station) return;
+    
     if (msg.status === 'In Progress') {
       this.currentProducts[msg.current_station] = { ...msg };
-      this.updateRecentActivities(msg);
     } else if (msg.status === 'Done') {
-      if (msg.current_station) {
-        this.currentProducts[msg.current_station] = undefined;
-      }
-      this.updateRecentActivities(msg);
+      this.currentProducts[msg.current_station] = undefined;
     }
   }
 
   updateAMR(msg: any): void {
-    if (!msg.from_location || !msg.to_location) {
-      this.amr = msg;
-      this.isAnimating = false;
-      return;
-    }
     this.amr = msg;
     
-    if (msg.status === 'Moving') {
+    if (msg.status === 'Moving' && msg.from_location && msg.to_location) {
       this.animateAMRWithPath(msg.from_location, msg.to_location);
     } else {
       this.isAnimating = false;
@@ -274,38 +360,110 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  updateStats(msg: any): void {
-    this.productionMetrics = {
-      total_units: msg.total_units || 0,
-      good_units: msg.good_units || 0,
-      bad_units: msg.bad_units || 0
-    };
+  updateMetrics(metrics: any): void {
+    if (!metrics) return;
+    
+    if (metrics.total_units !== undefined) {
+      this.totalProduction = metrics.total_units;
+    }
+    
+    if (metrics.good_units !== undefined) {
+      this.goodProducts = metrics.good_units;
+    }
+    
+    if (metrics.bad_units !== undefined) {
+      this.rejections = metrics.bad_units;
+    }
+    
+    if (metrics.amr_trips !== undefined) {
+      this.amrTrips = metrics.amr_trips;
+    }
   }
 
-  getPath(from: string, to: string): Position[] {
-    const directPathKey = `${from}-${to}`;
-    const reversePathKey = `${to}-${from}`;
-    
-    if (Object.keys(this.stationPaths).includes(directPathKey)) {
-      return this.stationPaths[directPathKey as PathKey];
+  updateStats(msg: any): void {
+    if (msg.total_production !== undefined) {
+      this.totalProduction = msg.total_production;
     }
     
-    if (Object.keys(this.stationPaths).includes(reversePathKey)) {
-      return [...this.stationPaths[reversePathKey as PathKey]].reverse();
+    if (msg.good_products !== undefined) {
+      this.goodProducts = msg.good_products;
     }
     
-    const fromPos = Object.keys(this.stationPositions).includes(from) 
-                  ? this.stationPositions[from as StationKey]
-                  : this.stationPositions['ASRS'];
-    const toPos = Object.keys(this.stationPositions).includes(to)
-                ? this.stationPositions[to as StationKey]
-                : this.stationPositions['ASRS'];
+    if (msg.rejections !== undefined) {
+      this.rejections = msg.rejections;
+    }
     
-    return [
-      fromPos,
-      { x: (fromPos.x + toPos.x) / 2, y: (fromPos.y + toPos.y) / 2 },
-      toPos
+    if (msg.oee_percentage !== undefined) {
+      this.oeePercentage = msg.oee_percentage;
+    }
+  }
+
+  updateProductHistory(data: any): void {
+    if (data.history && Array.isArray(data.history)) {
+      this.productHistoryData = data.history.map((item: any) => {
+        let status = 'In Progress';
+        if (item.status === 'Done') {
+          status = item.final_status || 'Good';
+        }
+
+        return {
+          serial_no: item.serial_no,
+          material_id: item.material_id,
+          cnc_time: item.cnc_completed ? this.formatTime(item.cnc_completed) : '--:--:--',
+          milling_time: item.milling_completed ? this.formatTime(item.milling_completed) : '--:--:--',
+          assembly_time: item.assembly_completed ? this.formatTime(item.assembly_completed) : '--:--:--',
+          manual_qc_time: item.qc_completed ? this.formatTime(item.qc_completed) : '--:--:--',
+          visual_inspection_time: item.inspection_completed ? this.formatTime(item.inspection_completed) : '--:--:--',
+          status: status
+        };
+      });
+    }
+  }
+
+  updatePieChart(data: any): void {
+    if (!data || !data.current_counts) return;
+    
+    const newData = [
+      { name: 'Running', y: data.current_counts.Running || 0 },
+      { name: 'Idle', y: data.current_counts.Idle || 0 },
+      { name: 'Stopped', y: data.current_counts.Stopped || 0 }
     ];
+    
+    if (this.chartRef) {
+      // Update chart data with animation
+      const series = this.chartRef.series[0];
+      if (series) {
+        newData.forEach((point, i) => {
+          if (i < series.data.length) {
+            series.data[i].update(point, false);
+          } else {
+            series.addPoint(point, false);
+          }
+        });
+        
+        this.chartRef.redraw(true); // Force redraw with animation
+      }
+    } else {
+      // Create a new options object with updated data
+      this.pieChartOptions = {
+        ...this.pieChartOptions,
+        series: [{
+          type: 'pie',
+          name: 'Status',
+          data: newData
+        }]
+      };
+    }
+  }
+
+  formatTime(timestamp: string): string {
+    if (!timestamp) return '--:--:--';
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString();
+    } catch (e) {
+      return '--:--:--';
+    }
   }
 
   animateAMRWithPath(from: string, to: string): void {
@@ -342,82 +500,49 @@ export class AppComponent implements OnInit, OnDestroy {
       const dy = endPoint.y - startPoint.y;
       this.amrRotation = Math.atan2(dy, dx) * (180 / Math.PI);
       
+      this.zone.run(() => {
+        this.changeDetectorRef.detectChanges();
+      });
+      
       if (currentPathIndex < totalSegments - 1 || segmentProgress < 1) {
         requestAnimationFrame(animate);
+      } else {
+        // Animation completed
+        this.zone.run(() => {
+          if (to === 'ASRS') {
+            this.isAnimating = false;
+          }
+          this.changeDetectorRef.detectChanges();
+        });
       }
     };
     
     animate();
   }
 
+  getPath(from: string, to: string): Position[] {
+    const directPathKey = `${from}-${to}`;
+    const reversePathKey = `${to}-${from}`;
+    
+    if (Object.keys(this.stationPaths).includes(directPathKey)) {
+      return this.stationPaths[directPathKey as PathKey];
+    }
+    
+    if (Object.keys(this.stationPaths).includes(reversePathKey)) {
+      return [...this.stationPaths[reversePathKey as PathKey]].reverse();
+    }
+    
+    const fromPos = this.stationPositions[from as StationKey] || this.stationPositions['ASRS'];
+    const toPos = this.stationPositions[to as StationKey] || this.stationPositions['ASRS'];
+    
+    return [
+      fromPos,
+      { x: (fromPos.x + toPos.x) / 2, y: (fromPos.y + toPos.y) / 2 },
+      toPos
+    ];
+  }
+
   easeInOutQuad(t: number): number {
     return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-  }
-
-  updateRecentActivities(product: Product): void {
-    if (!product.serial_no) return;
-    
-    const serialParts = product.serial_no.split('-');
-    const serialNumber = serialParts.length > 1 ? serialParts[1] : product.serial_no;
-    
-    const existingIndex = this.recentActivities.findIndex(
-      activity => activity.serial === serialNumber
-    );
-    
-    if (existingIndex >= 0) {
-      const activity = this.recentActivities[existingIndex];
-      
-      if (product.current_station === 'CNC Turning') {
-        activity.cncTime = this.getCurrentTime();
-      } else if (product.current_station === 'Milling') {
-        activity.millingTime = this.getCurrentTime();
-      } else if (product.current_station === 'Assembly') {
-        activity.assemblyTime = this.getCurrentTime();
-      } else if (product.current_station === 'Manual QC') {
-        activity.qcTime = this.getCurrentTime();
-      } else if (product.current_station === 'Visual Inspection') {
-        activity.inspectionTime = this.getCurrentTime();
-      }
-      
-      if (product.status === 'Done' && product.final_status) {
-        activity.status = product.final_status;
-      }
-    } else {
-      const newActivity = {
-        serial: serialNumber,
-        materialId: product.material_id,
-        station: { 
-          name: product.current_station,
-          icon: this.getIconForStation(product.current_station)
-        },
-        cncTime: product.current_station === 'CNC Turning' ? this.getCurrentTime() : '--:--:--',
-        millingTime: product.current_station === 'Milling' ? this.getCurrentTime() : '--:--:--',
-        assemblyTime: product.current_station === 'Assembly' ? this.getCurrentTime() : '--:--:--',
-        qcTime: product.current_station === 'Manual QC' ? this.getCurrentTime() : '--:--:--',
-        inspectionTime: product.current_station === 'Visual Inspection' ? this.getCurrentTime() : '--:--:--',
-        status: product.final_status || 'In Progress'
-      };
-      
-      this.recentActivities.unshift(newActivity);
-      if (this.recentActivities.length > 5) {
-        this.recentActivities.pop();
-      }
-    }
-  }
-
-  getCurrentTime(): string {
-    const now = new Date();
-    return now.toTimeString().split(' ')[0];
-  }
-
-  getIconForStation(station: string): string {
-    switch (station) {
-      case 'CNC Turning': return 'tool';
-      case 'Milling': return 'build';
-      case 'Manual QC': return 'check-circle';
-      case 'Assembly': return 'deployment-unit';
-      case 'Visual Inspection': return 'eye';
-      default: return 'dashboard';
-    }
   }
 }

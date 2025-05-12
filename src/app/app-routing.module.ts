@@ -1,9 +1,11 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { WhiteThemeComponent } from './white-theme/white-theme.component';
+import { WhiteComponent } from './white/white.component';
+
 
 const routes: Routes = [
-  {path:"white-space", component:WhiteThemeComponent}
+  // {path:"white-space", component:WhiteThemeComponent}
+  {path:"white-theme",component:WhiteComponent}
 ];
 
 @NgModule({

@@ -2,49 +2,50 @@ import { Injectable } from '@angular/core';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { Observable, Subject, timer } from 'rxjs';
 import { environment } from '../environments/environment';
-import { catchError, retry, switchMap, tap } from 'rxjs/operators';
+import { catchError, tap, switchMap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WebsocketService {
-  private socket$: WebSocketSubject<any> | null = null;
+  private manufacturingSocket$: WebSocketSubject<any> | null = null;
   private metricsSocket$: WebSocketSubject<any> | null = null;
-  private messagesSubject = new Subject<any>();
-  private metricsSubject = new Subject<any>();
+  private historySocket$: WebSocketSubject<any> | null = null;
+  private stationStatsSocket$: WebSocketSubject<any> | null = null;
   
+  private messagesSubject = new Subject<any>();
   public messages$ = this.messagesSubject.asObservable();
-  public metrics$ = this.metricsSubject.asObservable();
 
   constructor() {
-    this.connect();
+    this.connectManufacturing();
     this.connectMetrics();
+    this.connectHistory();
+    this.connectStationStats();
   }
 
-  private connect(): void {
-    if (!this.socket$ || this.socket$.closed) {
-      this.socket$ = webSocket({
+  private connectManufacturing(): void {
+    if (!this.manufacturingSocket$ || this.manufacturingSocket$.closed) {
+      this.manufacturingSocket$ = webSocket({
         url: environment.wsEndpoint,
         openObserver: {
-          next: () => console.log('Main WebSocket connection established')
+          next: () => console.log('Manufacturing WebSocket connected')
         },
         closeObserver: {
           next: () => {
-            console.log('Main WebSocket connection closed');
-            this.socket$ = null;
-            setTimeout(() => this.connect(), 5000);
+            console.log('Manufacturing WebSocket closed');
+            setTimeout(() => this.connectManufacturing(), 5000);
           }
         }
       });
 
-      this.socket$.pipe(
+      this.manufacturingSocket$.pipe(
         catchError(error => {
-          console.error('Main WebSocket error:', error);
-          return this.reconnect();
+          console.error('Manufacturing WebSocket error:', error);
+          return this.reconnectManufacturing();
         })
       ).subscribe(
-        (message) => this.messagesSubject.next(message),
-        (error) => console.error('Main WebSocket error in subscribe:', error)
+        message => this.messagesSubject.next(message),
+        error => console.error('Manufacturing subscribe error:', error)
       );
     }
   }
@@ -54,12 +55,11 @@ export class WebsocketService {
       this.metricsSocket$ = webSocket({
         url: environment.metricsWsEndpoint,
         openObserver: {
-          next: () => console.log('Metrics WebSocket connection established')
+          next: () => console.log('Metrics WebSocket connected')
         },
         closeObserver: {
           next: () => {
-            console.log('Metrics WebSocket connection closed');
-            this.metricsSocket$ = null;
+            console.log('Metrics WebSocket closed');
             setTimeout(() => this.connectMetrics(), 5000);
           }
         }
@@ -71,15 +71,79 @@ export class WebsocketService {
           return this.reconnectMetrics();
         })
       ).subscribe(
-        (message) => this.metricsSubject.next(message),
-        (error) => console.error('Metrics WebSocket error in subscribe:', error)
+        message => this.messagesSubject.next(message),
+        error => console.error('Metrics subscribe error:', error)
       );
     }
   }
 
-  private reconnect(): Observable<any> {
+  private connectHistory(): void {
+    if (!this.historySocket$ || this.historySocket$.closed) {
+      this.historySocket$ = webSocket({
+        url: environment.historyWsEndpoint,
+        openObserver: {
+          next: () => console.log('History WebSocket connected')
+        },
+        closeObserver: {
+          next: () => {
+            console.log('History WebSocket closed');
+            setTimeout(() => this.connectHistory(), 5000);
+          }
+        }
+      });
+
+      this.historySocket$.pipe(
+        catchError(error => {
+          console.error('History WebSocket error:', error);
+          return this.reconnectHistory();
+        })
+      ).subscribe(
+        message => {
+          if (message && !message.type) {
+            message.type = 'product_history_update';
+          }
+          this.messagesSubject.next(message);
+        },
+        error => console.error('History subscribe error:', error)
+      );
+    }
+  }
+
+  private connectStationStats(): void {
+    if (!this.stationStatsSocket$ || this.stationStatsSocket$.closed) {
+      this.stationStatsSocket$ = webSocket({
+        url: environment.stationStatsEndpoint,
+        openObserver: {
+          next: () => console.log('Station Stats WebSocket connected')
+        },
+        closeObserver: {
+          next: () => {
+            console.log('Station Stats WebSocket closed');
+            setTimeout(() => this.connectStationStats(), 5000);
+          }
+        }
+      });
+
+      this.stationStatsSocket$.pipe(
+        catchError(error => {
+          console.error('Station Stats WebSocket error:', error);
+          return this.reconnectStationStats();
+        })
+      ).subscribe(
+        message => {
+          if (message && !message.type) {
+            message.type = 'station_status_counts';
+          }
+          this.messagesSubject.next(message);
+        },
+        error => console.error('Station Stats subscribe error:', error)
+      );
+    }
+  }
+
+  private reconnectManufacturing(): Observable<any> {
     return timer(5000).pipe(
-      tap(() => this.connect()),
+      tap(() => this.connectManufacturing()),
       switchMap(() => this.messages$)
     );
   }
@@ -87,27 +151,70 @@ export class WebsocketService {
   private reconnectMetrics(): Observable<any> {
     return timer(5000).pipe(
       tap(() => this.connectMetrics()),
-      switchMap(() => this.metrics$)
+      switchMap(() => this.messages$)
+    );
+  }
+
+  private reconnectHistory(): Observable<any> {
+    return timer(5000).pipe(
+      tap(() => this.connectHistory()),
+      switchMap(() => this.messages$)
+    );
+  }
+
+  private reconnectStationStats(): Observable<any> {
+    return timer(5000).pipe(
+      tap(() => {
+        console.log('Attempting to reconnect station stats...');
+        this.connectStationStats();
+      }),
+      switchMap(() => this.messages$)
     );
   }
 
   sendMessage(message: any): void {
-    if (this.socket$ && !this.socket$.closed) {
-      this.socket$.next(message);
+    if (this.manufacturingSocket$ && !this.manufacturingSocket$.closed) {
+      this.manufacturingSocket$.next(message);
     } else {
-      console.error('Cannot send message, socket is not connected');
-      this.connect();
+      console.error('Manufacturing socket not connected');
+      this.connectManufacturing();
     }
   }
 
-  disconnect(): void {
-    if (this.socket$) {
-      this.socket$.complete();
-      this.socket$ = null;
+  sendHistoryMessage(message: any): void {
+    if (this.historySocket$ && !this.historySocket$.closed) {
+      this.historySocket$.next(message);
+    } else {
+      console.error('History socket not connected');
+      this.connectHistory();
+    }
+  }
+
+  sendStationStatsMessage(message: any): void {
+    if (this.stationStatsSocket$ && !this.stationStatsSocket$.closed) {
+      this.stationStatsSocket$.next(message);
+    } else {
+      console.error('Station Stats socket not connected');
+      this.connectStationStats();
+    }
+  }
+
+  public disconnect(): void {
+    if (this.manufacturingSocket$) {
+      this.manufacturingSocket$.complete();
+      this.manufacturingSocket$ = null;
     }
     if (this.metricsSocket$) {
       this.metricsSocket$.complete();
       this.metricsSocket$ = null;
+    }
+    if (this.historySocket$) {
+      this.historySocket$.complete();
+      this.historySocket$ = null;
+    }
+    if (this.stationStatsSocket$) {
+      this.stationStatsSocket$.complete();
+      this.stationStatsSocket$ = null;
     }
   }
 }

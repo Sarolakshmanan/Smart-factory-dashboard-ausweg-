@@ -73,12 +73,15 @@ import { NzTypographyModule } from 'ng-zorro-antd/typography';
 import { NzUploadModule } from 'ng-zorro-antd/upload';
 import { NzResizableModule } from 'ng-zorro-antd/resizable';
 import { NzPipesModule } from 'ng-zorro-antd/pipes';
+import { HighchartsChartModule } from 'highcharts-angular';
 
 
 // icons
 import { IconDefinition } from '@ant-design/icons-angular';
 import * as AllIcons from '@ant-design/icons-angular/icons';
-import { WhiteThemeComponent } from './white-theme/white-theme.component';
+import { WhiteComponent } from './white/white.component';
+
+
 
 const antDesignIcons = AllIcons as {
   [key: string]: IconDefinition;
@@ -91,7 +94,9 @@ const icons: IconDefinition[] = Object.keys(antDesignIcons).map(
 @NgModule({
   declarations: [
     AppComponent,
-    WhiteThemeComponent
+    WhiteComponent,
+    
+ 
   ],
   imports: [
     BrowserModule,
@@ -164,6 +169,7 @@ const icons: IconDefinition[] = Object.keys(antDesignIcons).map(
     NzWaveModule,
     NzResizableModule,
     NzPipesModule,
+    HighchartsChartModule
   
   ],
   providers: [],
